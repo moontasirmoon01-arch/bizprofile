@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { getUploadUrl } from "@/lib/s3";
+import { getUploadUrl } from "@/lib/storage";
 import { randomUUID } from "crypto";
 
 export async function POST(req: Request) {
@@ -16,9 +16,9 @@ export async function POST(req: Request) {
   }
 
   const ext = filename.split(".").pop();
-  const key = `uploads/${session.user.id}/${randomUUID()}.${ext}`;
+  const path = `${session.user.id}/${randomUUID()}.${ext}`;
 
-  const { url } = await getUploadUrl(key, contentType);
+  const { url, key } = await getUploadUrl(path);
 
   return NextResponse.json({ url, key });
 }

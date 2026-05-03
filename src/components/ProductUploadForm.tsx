@@ -63,7 +63,7 @@ export function ProductUploadForm() {
         headers: { "Content-Type": file.type },
       });
 
-      const publicUrl = `https://${process.env.NEXT_PUBLIC_S3_BUCKET}.s3.${process.env.NEXT_PUBLIC_AWS_REGION}.amazonaws.com/${key}`;
+      const publicUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/product-images/${key}`;
       uploaded.push(publicUrl);
     }
 
