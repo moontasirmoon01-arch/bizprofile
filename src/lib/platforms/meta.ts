@@ -3,9 +3,11 @@ export const META_AUTH_URL = "https://www.facebook.com/v21.0/dialog/oauth"
 export const META_TOKEN_URL = "https://graph.facebook.com/v21.0/oauth/access_token"
 export const META_GRAPH_URL = "https://graph.facebook.com/v21.0"
 
+const getBaseUrl = () => process.env.NEXTAUTH_URL!.trim()
+
 export function getMetaOAuthUrl(state: string): string {
   const configId = process.env.META_CONFIG_ID
-  const baseUrl = process.env.NEXTAUTH_URL!.trim()
+  const baseUrl = getBaseUrl()
 
   if (configId) {
     // Business Login: config_id defines scopes — do NOT send scope param
@@ -34,7 +36,7 @@ export async function exchangeMetaCode(code: string): Promise<{ access_token: st
   const params = new URLSearchParams({
     client_id: process.env.META_APP_ID!,
     client_secret: process.env.META_APP_SECRET!,
-    redirect_uri: `${baseUrl}/api/connect/meta/callback`,
+    redirect_uri: `${getBaseUrl()}/api/connect/meta/callback`,
     code,
   })
   const res = await fetch(`${META_TOKEN_URL}?${params}`)
