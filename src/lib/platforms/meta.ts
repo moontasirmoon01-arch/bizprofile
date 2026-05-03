@@ -5,12 +5,13 @@ export const META_GRAPH_URL = "https://graph.facebook.com/v21.0"
 
 export function getMetaOAuthUrl(state: string): string {
   const configId = process.env.META_CONFIG_ID
+  const baseUrl = process.env.NEXTAUTH_URL!.trim()
 
   if (configId) {
     // Business Login: config_id defines scopes — do NOT send scope param
     const params = new URLSearchParams({
       client_id: process.env.META_APP_ID!,
-      redirect_uri: `${process.env.NEXTAUTH_URL}/api/connect/meta/callback`,
+      redirect_uri: `${baseUrl}/api/connect/meta/callback`,
       state,
       response_type: "code",
       config_id: configId,
@@ -21,7 +22,7 @@ export function getMetaOAuthUrl(state: string): string {
   // Standard Facebook Login fallback
   const params = new URLSearchParams({
     client_id: process.env.META_APP_ID!,
-    redirect_uri: `${process.env.NEXTAUTH_URL}/api/connect/meta/callback`,
+    redirect_uri: `${baseUrl}/api/connect/meta/callback`,
     scope: "pages_show_list,pages_read_engagement,pages_manage_posts",
     state,
     response_type: "code",
@@ -33,7 +34,7 @@ export async function exchangeMetaCode(code: string): Promise<{ access_token: st
   const params = new URLSearchParams({
     client_id: process.env.META_APP_ID!,
     client_secret: process.env.META_APP_SECRET!,
-    redirect_uri: `${process.env.NEXTAUTH_URL}/api/connect/meta/callback`,
+    redirect_uri: `${baseUrl}/api/connect/meta/callback`,
     code,
   })
   const res = await fetch(`${META_TOKEN_URL}?${params}`)
