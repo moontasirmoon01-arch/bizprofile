@@ -4,7 +4,7 @@ export function getGoogleOAuthClient() {
   return new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
-    `${process.env.NEXTAUTH_URL}/api/connect/google/callback`
+    `${process.env.NEXTAUTH_URL!.trim()}/api/connect/google/callback`
   )
 }
 
