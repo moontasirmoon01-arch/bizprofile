@@ -44,10 +44,12 @@ export function ProductUploadForm() {
         continue;
       }
 
+      const fd = new FormData();
+      fd.append("file", file);
+
       const res = await fetch("/api/upload", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ filename: file.name, contentType: file.type }),
+        body: fd,
       });
 
       if (!res.ok) {
@@ -55,16 +57,8 @@ export function ProductUploadForm() {
         continue;
       }
 
-      const { url, key } = await res.json();
-
-      await fetch(url, {
-        method: "PUT",
-        body: file,
-        headers: { "Content-Type": file.type },
-      });
-
-      const publicUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/product-images/${key}`;
-      uploaded.push(publicUrl);
+      const { url } = await res.json();
+      uploaded.push(url);
     }
 
     setImages((prev) => [...prev, ...uploaded]);

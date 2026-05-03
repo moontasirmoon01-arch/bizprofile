@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { getUploadUrl } from "@/lib/storage";
 import { randomUUID } from "crypto";
 
 export async function POST(req: Request) {
@@ -9,16 +8,36 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { filename, contentType } = await req.json();
+  const formData = await req.formData();
+  const file = formData.get("file") as File;
 
-  if (!filename || !contentType) {
-    return NextResponse.json({ error: "filename and contentType required" }, { status: 400 });
+  if (!file) {
+    return NextResponse.json({ error: "No file provided" }, { status: 400 });
   }
 
-  const ext = filename.split(".").pop();
+  const ext = file.name.split(".").pop();
   const path = `${session.user.id}/${randomUUID()}.${ext}`;
+  const bucket = "product-images";
+  const supabaseUrl = process.env.SUPABASE_URL!;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
-  const { url, key } = await getUploadUrl(path);
+  const bytes = await file.arrayBuffer();
 
-  return NextResponse.json({ url, key });
+  const res = await fetch(`${supabaseUrl}/storage/v1/object/${bucket}/${path}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${serviceKey}`,
+      "Content-Type": file.type,
+    },
+    body: bytes,
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    console.error("Supabase upload error:", err);
+    return NextResponse.json({ error: "Upload failed" }, { status: 500 });
+  }
+
+  const publicUrl = `${supabaseUrl}/storage/v1/object/public/${bucket}/${path}`;
+  return NextResponse.json({ url: publicUrl });
 }
