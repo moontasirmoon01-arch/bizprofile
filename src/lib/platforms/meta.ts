@@ -56,7 +56,9 @@ export async function getLongLivedToken(shortToken: string): Promise<string> {
 }
 
 export async function getMetaPages(accessToken: string) {
-  const res = await fetch(`${META_GRAPH_URL}/me/accounts?access_token=${accessToken}`)
+  const res = await fetch(
+    `${META_GRAPH_URL}/me/accounts?fields=id,name,access_token,instagram_business_account&access_token=${accessToken}`
+  )
   return res.json()
 }
 

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { decryptToken } from "@/lib/platforms/encrypt"
-import { postToFacebookPage } from "@/lib/platforms/meta"
+import { postToFacebookPage, postToInstagram } from "@/lib/platforms/meta"
 import { postToGoogleBusiness } from "@/lib/platforms/google"
 
 export async function POST(
@@ -66,6 +66,32 @@ export async function POST(
           },
         })
         results.push({ platform: "META", status: result.id ? "published" : "failed" })
+
+        // Instagram: post if page has linked IG Business Account and campaign has an image
+        const igAccountId = pageData?.instagram_business_account?.id
+        if (igAccountId && firstImage) {
+          console.log("[publish IG] igAccountId:", igAccountId)
+          try {
+            const igResult = await postToInstagram(igAccountId, pageToken, firstImage, postContent)
+            console.log("[publish IG] result:", JSON.stringify(igResult))
+            await db.campaignPost.create({
+              data: {
+                campaignId: id,
+                connectionId: conn.id,
+                platform: "META",
+                externalId: igResult.id,
+                status: igResult.id ? "PUBLISHED" : "FAILED",
+                publishedAt: igResult.id ? new Date() : null,
+                errorMsg: igResult.error?.message ?? (igResult.id ? null : JSON.stringify(igResult)),
+              },
+            })
+            results.push({ platform: "INSTAGRAM", status: igResult.id ? "published" : "failed" })
+          } catch (igErr: unknown) {
+            const msg = igErr instanceof Error ? igErr.message : String(igErr)
+            console.error("[publish IG] error:", msg)
+            results.push({ platform: "INSTAGRAM", status: "failed", error: msg })
+          }
+        }
       }
 
       if (conn.platform === "GOOGLE") {
