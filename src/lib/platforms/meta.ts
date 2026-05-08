@@ -76,11 +76,15 @@ export async function postToInstagram(igUserId: string, accessToken: string, ima
     method: "POST",
     body: new URLSearchParams({ image_url: imageUrl, caption, access_token: accessToken }),
   })
-  const { id: creationId } = await containerRes.json()
+  const containerData = await containerRes.json()
+  console.log("[IG] container response:", JSON.stringify(containerData))
+  if (!containerData.id) {
+    throw new Error(`IG container failed: ${JSON.stringify(containerData.error ?? containerData)}`)
+  }
   // Step 2: Publish
   const publishRes = await fetch(`${META_GRAPH_URL}/${igUserId}/media_publish`, {
     method: "POST",
-    body: new URLSearchParams({ creation_id: creationId, access_token: accessToken }),
+    body: new URLSearchParams({ creation_id: containerData.id, access_token: accessToken }),
   })
   return publishRes.json()
 }
