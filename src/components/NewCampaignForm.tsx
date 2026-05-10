@@ -54,8 +54,9 @@ export function NewCampaignForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ productIds: selectedProducts, platforms: selectedPlatforms, businessName }),
       })
+      const text = await res.text()
       let data: any = {}
-      try { data = await res.json() } catch { throw new Error("Server timeout — try again") }
+      try { data = JSON.parse(text) } catch { throw new Error(`HTTP ${res.status}: ${text.slice(0, 150) || "empty"}`) }
       if (!res.ok) throw new Error(data.error ?? "AI generation failed")
       if (data.title) setValue("title", data.title)
       if (data.caption) {
