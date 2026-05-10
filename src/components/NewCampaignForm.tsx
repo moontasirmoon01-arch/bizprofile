@@ -84,7 +84,7 @@ export function NewCampaignForm({
       const res = await fetch("/api/ai/generate-image", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: imagePrompt }),
+        body: JSON.stringify({ prompt: imagePrompt, title: watch("title") || undefined }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
