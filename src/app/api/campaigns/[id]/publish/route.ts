@@ -46,7 +46,7 @@ export async function POST(
     try {
       console.log("[publish] platform:", conn.platform, "pageId:", conn.pageId, "metadata:", JSON.stringify(conn.metadata).slice(0, 200))
       if (conn.platform === "META" && conn.pageId) {
-        const firstImage = products.find(p => p.images.length > 0)?.images[0]
+        const firstImage = products.find(p => p.images.length > 0)?.images[0] ?? (campaign as any).imageUrl ?? undefined
         // Use page access token from metadata if available
         const pageData = (conn.metadata as any[])?.find((p: any) => p.id === conn.pageId)
         const pageToken = pageData?.access_token ?? token

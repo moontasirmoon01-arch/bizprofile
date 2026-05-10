@@ -24,6 +24,7 @@ export default async function NewCampaignPage() {
       <NewCampaignForm
         products={business.products}
         connectedPlatforms={business.connections.map(c => c.platform)}
+        businessName={business.name}
       />
     </div>
   )

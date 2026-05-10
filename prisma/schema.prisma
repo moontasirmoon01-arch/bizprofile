@@ -143,6 +143,7 @@ model Campaign {
   businessId  String
   title       String
   description String?        @db.Text
+  imageUrl    String?
   productIds  String[]
   platforms   Platform[]
   status      CampaignStatus @default(DRAFT)

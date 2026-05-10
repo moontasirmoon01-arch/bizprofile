@@ -6,6 +6,8 @@ import { z } from "zod"
 const campaignSchema = z.object({
   title: z.string().min(2),
   description: z.string().optional(),
+  imageUrl: z.string().url().optional(),
+  aiImageUrl: z.string().url().optional(),
   productIds: z.array(z.string()),
   platforms: z.array(z.enum(["META", "GOOGLE", "YOUTUBE", "TIKTOK"])),
   budget: z.coerce.number().positive().optional(),
@@ -40,12 +42,14 @@ export async function POST(req: Request) {
   const parsed = campaignSchema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
 
+  const { aiImageUrl, ...campaignData } = parsed.data
   const campaign = await db.campaign.create({
     data: {
       businessId: business.id,
-      ...parsed.data,
-      startDate: parsed.data.startDate ? new Date(parsed.data.startDate) : null,
-      endDate: parsed.data.endDate ? new Date(parsed.data.endDate) : null,
+      ...campaignData,
+      imageUrl: aiImageUrl ?? campaignData.imageUrl ?? null,
+      startDate: campaignData.startDate ? new Date(campaignData.startDate) : null,
+      endDate: campaignData.endDate ? new Date(campaignData.endDate) : null,
     },
   })
   return NextResponse.json(campaign, { status: 201 })
