@@ -6,6 +6,10 @@ const PLATFORM_ICONS: Record<string, string> = {
   META: "📘", GOOGLE: "🔴", YOUTUBE: "▶️", TIKTOK: "🎵",
 }
 
+const PLATFORM_NAMES: Record<string, string> = {
+  META: "Facebook + Instagram", GOOGLE: "Google", YOUTUBE: "YouTube", TIKTOK: "TikTok",
+}
+
 export default async function DashboardPage() {
   const session = await auth();
   const business = await db.business.findUnique({
@@ -28,7 +32,18 @@ export default async function DashboardPage() {
     where: { campaign: { businessId: business.id }, status: "PUBLISHED" },
   }) : 0
 
-  const setupComplete = !!business;
+  const hasProfile = !!business;
+  const hasConnection = (business?.connections.length ?? 0) > 0;
+  const hasProduct = (business?._count.products ?? 0) > 0;
+  const hasCampaign = (business?._count.campaigns ?? 0) > 0;
+  const onboardingDone = hasProfile && hasConnection && hasProduct && hasCampaign;
+
+  const steps = [
+    { done: hasProfile, label: "বিজনেস প্রোফাইল তৈরি করুন", href: "/profile" },
+    { done: hasConnection, label: "সোশ্যাল মিডিয়া কানেক্ট করুন", href: "/connect" },
+    { done: hasProduct, label: "প্রোডাক্ট যোগ করুন", href: "/products/new" },
+    { done: hasCampaign, label: "প্রথম ক্যাম্পেইন তৈরি করুন", href: "/campaigns/new" },
+  ];
 
   return (
     <div className="space-y-6">
@@ -39,18 +54,36 @@ export default async function DashboardPage() {
         <p className="text-gray-500 text-sm mt-1">আপনার ব্যবসার ওভারভিউ</p>
       </div>
 
-      {!setupComplete && (
-        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 flex items-center justify-between">
-          <div>
-            <p className="font-semibold text-blue-800">প্রোফাইল সেটআপ করুন</p>
-            <p className="text-blue-600 text-sm mt-1">আপনার বিজনেস প্রোফাইল এখনো তৈরি হয়নি</p>
+      {/* Onboarding checklist */}
+      {!onboardingDone && (
+        <div className="bg-white rounded-2xl border border-gray-100 p-5">
+          <h2 className="font-semibold text-gray-900 mb-1">শুরু করুন</h2>
+          <p className="text-sm text-gray-400 mb-4">এই ধাপগুলো সম্পন্ন করে আপনার ব্যবসা পরিচালনা শুরু করুন</p>
+          <div className="space-y-2">
+            {steps.map((step, i) => (
+              <Link
+                key={i}
+                href={step.done ? "#" : step.href}
+                className={`flex items-center gap-3 p-3 rounded-xl transition-colors ${
+                  step.done ? "opacity-50 cursor-default" : "hover:bg-blue-50 group"
+                }`}
+              >
+                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+                  step.done ? "bg-green-100 text-green-600" : "bg-blue-100 text-blue-600"
+                }`}>
+                  {step.done ? "✓" : i + 1}
+                </span>
+                <span className={`text-sm font-medium ${step.done ? "text-gray-400 line-through" : "text-gray-700 group-hover:text-blue-600"}`}>
+                  {step.label}
+                </span>
+                {!step.done && <span className="ml-auto text-blue-400 text-xs">→</span>}
+              </Link>
+            ))}
           </div>
-          <Link href="/profile" className="px-5 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-colors whitespace-nowrap">
-            এখনই সেটআপ করুন →
-          </Link>
         </div>
       )}
 
+      {/* Stats grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
           { label: "প্রোডাক্ট", value: business?._count.products ?? 0, icon: "📦", href: "/products" },
@@ -66,33 +99,38 @@ export default async function DashboardPage() {
         ))}
       </div>
 
+      {/* Connected platforms */}
       {business?.connections && business.connections.length > 0 && (
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
-          <h2 className="font-semibold text-gray-900 mb-3">কানেক্টেড প্ল্যাটফর্ম</h2>
-          <div className="flex gap-3">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-semibold text-gray-900">কানেক্টেড প্ল্যাটফর্ম</h2>
+            <Link href="/connect" className="text-xs text-blue-600 hover:underline">ম্যানেজ করুন →</Link>
+          </div>
+          <div className="flex flex-wrap gap-2">
             {business.connections.map(c => (
-              <span key={c.platform} className="flex items-center gap-2 px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700 font-medium">
-                {PLATFORM_ICONS[c.platform]} {c.platform}
+              <span key={c.platform} className="flex items-center gap-2 px-3 py-1.5 bg-green-50 border border-green-200 rounded-full text-sm text-green-700 font-medium">
+                {PLATFORM_ICONS[c.platform]} {PLATFORM_NAMES[c.platform] ?? c.platform}
               </span>
             ))}
           </div>
         </div>
       )}
 
+      {/* Recent campaigns */}
       {recentCampaigns.length > 0 && (
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold text-gray-900">সাম্প্রতিক ক্যাম্পেইন</h2>
             <Link href="/campaigns" className="text-sm text-blue-600 hover:underline">সব দেখুন →</Link>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-1">
             {recentCampaigns.map(c => (
-              <div key={c.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+              <div key={c.id} className="flex items-center justify-between py-2.5 border-b border-gray-50 last:border-0">
                 <div>
                   <p className="text-sm font-medium text-gray-900">{c.title}</p>
-                  <p className="text-xs text-gray-400">{c._count.posts}টি পোস্ট</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{c._count.posts}টি পোস্ট</p>
                 </div>
-                <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
                   c.status === "ACTIVE" ? "bg-green-100 text-green-700" :
                   c.status === "DRAFT" ? "bg-gray-100 text-gray-600" :
                   "bg-yellow-100 text-yellow-700"
@@ -105,19 +143,7 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {setupComplete && (
-        <div className="bg-white rounded-2xl border border-gray-100 p-5">
-          <h2 className="font-semibold text-gray-900 mb-3">বিজনেস সারসংক্ষেপ</h2>
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            <div><span className="text-gray-500">নাম:</span><span className="ml-2 font-medium text-gray-900">{business.name}</span></div>
-            <div><span className="text-gray-500">ক্যাটেগরি:</span><span className="ml-2 font-medium text-gray-900">{business.category}</span></div>
-            {business.address && <div><span className="text-gray-500">শহর:</span><span className="ml-2 font-medium text-gray-900">{business.address.city}</span></div>}
-            {business.phone && <div><span className="text-gray-500">ফোন:</span><span className="ml-2 font-medium text-gray-900">{business.phone}</span></div>}
-          </div>
-          <Link href="/profile" className="mt-3 inline-block text-blue-600 text-sm font-medium hover:underline">প্রোফাইল সম্পাদনা করুন →</Link>
-        </div>
-      )}
-
+      {/* Quick actions */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Link href="/campaigns/new" className="bg-white rounded-2xl border border-gray-100 p-5 hover:border-blue-200 hover:shadow-sm transition-all group">
           <div className="text-2xl mb-2">📢</div>

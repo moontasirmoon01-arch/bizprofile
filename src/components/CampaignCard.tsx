@@ -5,7 +5,12 @@ const STATUS_LABELS: Record<string, string> = {
   DRAFT: "ড্রাফট", ACTIVE: "সক্রিয়", PAUSED: "বিরতি", COMPLETED: "সম্পন্ন",
 }
 const PLATFORM_ICONS: Record<string, string> = {
-  META: "📘", GOOGLE: "🔴", YOUTUBE: "▶️", TIKTOK: "🎵",
+  META: "📘", GOOGLE: "🔴", YOUTUBE: "▶️", TIKTOK: "🎵", INSTAGRAM: "📸",
+}
+
+const STATUS_COLORS: Record<string, string> = {
+  published: "text-green-600",
+  failed: "text-red-500",
 }
 
 export function CampaignCard({ campaign }: { campaign: any }) {
@@ -16,7 +21,7 @@ export function CampaignCard({ campaign }: { campaign: any }) {
     setPublishing(true)
     const res = await fetch(`/api/campaigns/${campaign.id}/publish`, { method: "POST" })
     const data = await res.json()
-    setResult(data.results?.map((r: any) => `${PLATFORM_ICONS[r.platform]} ${r.status}`).join(" · ") || "সম্পন্ন")
+    setResult(data.results?.map((r: any) => `${PLATFORM_ICONS[r.platform] ?? r.platform} ${r.status === "published" ? "✓" : "✗"}`).join("  ") || "সম্পন্ন")
     setPublishing(false)
   }
 

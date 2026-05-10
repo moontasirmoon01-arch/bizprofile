@@ -91,18 +91,6 @@ export default async function ConnectPage({
         ))}
       </div>
 
-      <div className="bg-blue-50 border border-blue-100 rounded-xl p-5">
-        <h3 className="font-semibold text-blue-800 mb-2">API Keys সেটআপ করুন</h3>
-        <p className="text-sm text-blue-700 mb-3">
-          প্রতিটি প্ল্যাটফর্ম কানেক্ট করতে .env ফাইলে API keys যোগ করুন:
-        </p>
-        <div className="space-y-1 font-mono text-xs text-blue-900 bg-blue-100 rounded-lg p-3">
-          <div>META_APP_ID=&quot;your-meta-app-id&quot;</div>
-          <div>META_APP_SECRET=&quot;your-meta-app-secret&quot;</div>
-          <div>TIKTOK_APP_ID=&quot;your-tiktok-app-id&quot;</div>
-          <div>TIKTOK_APP_SECRET=&quot;your-tiktok-app-secret&quot;</div>
-        </div>
-      </div>
     </div>
   )
 }
