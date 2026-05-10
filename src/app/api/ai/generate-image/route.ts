@@ -2,8 +2,6 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { randomUUID } from "crypto"
-import { readFileSync } from "fs"
-import path from "path"
 import sharp from "sharp"
 
 export const maxDuration = 60
@@ -41,13 +39,24 @@ function wrapText(text: string, maxChars: number): string[] {
   return lines.slice(0, 3)
 }
 
+let cachedFont: string | null = null
+
+async function getBengaliFont(): Promise<string> {
+  if (cachedFont) return cachedFont
+  const baseUrl = process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : "http://localhost:3000"
+  const res = await fetch(`${baseUrl}/fonts/NotoSansBengali-Regular.ttf`)
+  cachedFont = Buffer.from(await res.arrayBuffer()).toString("base64")
+  return cachedFont
+}
+
 async function addTextOverlay(
   imageBytes: ArrayBuffer,
   title: string,
   businessName: string
 ): Promise<Buffer> {
-  const fontPath = path.join(process.cwd(), "public", "fonts", "NotoSansBengali-Regular.ttf")
-  const fontBase64 = readFileSync(fontPath).toString("base64")
+  const fontBase64 = await getBengaliFont()
 
   const baseImg = sharp(Buffer.from(imageBytes))
   const { width = 1024, height = 1024 } = await baseImg.metadata()
