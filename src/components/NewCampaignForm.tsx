@@ -65,7 +65,7 @@ export function NewCampaignForm({
       }
       // Auto-set image prompt
       const productNames = products.filter(p => selectedProducts.includes(p.id)).map(p => p.name).join(", ")
-      setImagePrompt(`Professional product advertisement photo for ${businessName}${productNames ? `, featuring ${productNames}` : ""}, vibrant colors, clean background, Bangladesh market`)
+      setImagePrompt(`High-quality social media advertisement for "${businessName}"${productNames ? `, showcasing ${productNames}` : ""}. Studio lighting, photorealistic, vibrant colors, clean white background, professional product photography, 4K, sharp focus, commercial ad style`)
     } catch (e: any) {
       setError(e.message ?? "AI content generation failed")
     }

@@ -25,14 +25,23 @@ export async function POST(req: Request) {
   const token = process.env.REPLICATE_API_TOKEN?.trim()
   if (!token) return NextResponse.json({ error: "REPLICATE_API_TOKEN not set" }, { status: 500 })
 
-  // Start FLUX Schnell prediction
-  const startRes = await fetch("https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions", {
+  // Start FLUX Dev prediction (higher quality)
+  const startRes = await fetch("https://api.replicate.com/v1/models/black-forest-labs/flux-dev/predictions", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ input: { prompt, num_outputs: 1, output_format: "jpg" } }),
+    body: JSON.stringify({
+      input: {
+        prompt,
+        num_outputs: 1,
+        output_format: "jpg",
+        aspect_ratio: "1:1",
+        guidance: 3.5,
+        num_inference_steps: 28,
+      },
+    }),
   })
 
   if (!startRes.ok) {
