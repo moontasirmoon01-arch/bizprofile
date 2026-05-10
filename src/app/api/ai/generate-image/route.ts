@@ -38,7 +38,7 @@ export async function POST(req: Request) {
   if (!startRes.ok) {
     const err = await startRes.text()
     console.error("Replicate start error:", err)
-    return NextResponse.json({ error: "Failed to start image generation" }, { status: 500 })
+    return NextResponse.json({ error: `Replicate ${startRes.status}: ${err.slice(0, 300)}` }, { status: 500 })
   }
 
   const prediction = await startRes.json()
