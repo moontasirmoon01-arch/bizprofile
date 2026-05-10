@@ -3,8 +3,22 @@ import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { randomUUID } from "crypto"
 import sharp from "sharp"
+import satori from "satori"
 
 export const maxDuration = 60
+
+let cachedFont: ArrayBuffer | null = null
+
+async function getBengaliFont(): Promise<ArrayBuffer> {
+  if (cachedFont) return cachedFont
+  const baseUrl = process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : "http://localhost:3000"
+  const res = await fetch(`${baseUrl}/fonts/NotoSansBengali-Regular.ttf`)
+  if (!res.ok) throw new Error(`Font fetch failed: ${res.status}`)
+  cachedFont = await res.arrayBuffer()
+  return cachedFont
+}
 
 async function pollPrediction(id: string, token: string): Promise<string> {
   for (let i = 0; i < 30; i++) {
@@ -19,94 +33,81 @@ async function pollPrediction(id: string, token: string): Promise<string> {
   throw new Error("Timed out waiting for image")
 }
 
-function escapeXml(str: string): string {
-  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")
-}
-
-function wrapText(text: string, maxChars: number): string[] {
-  const words = text.split(" ")
-  const lines: string[] = []
-  let current = ""
-  for (const word of words) {
-    if ((current + " " + word).trim().length > maxChars) {
-      if (current) lines.push(current.trim())
-      current = word
-    } else {
-      current = (current + " " + word).trim()
-    }
-  }
-  if (current) lines.push(current.trim())
-  return lines.slice(0, 3)
-}
-
-let cachedFont: string | null = null
-
-async function getBengaliFont(): Promise<string> {
-  if (cachedFont) return cachedFont
-  const baseUrl = process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : "http://localhost:3000"
-  const res = await fetch(`${baseUrl}/fonts/NotoSansBengali-Regular.ttf`)
-  cachedFont = Buffer.from(await res.arrayBuffer()).toString("base64")
-  return cachedFont
-}
-
-async function addTextOverlay(
-  imageBytes: ArrayBuffer,
+async function createTextOverlay(
+  width: number,
+  height: number,
   title: string,
-  businessName: string
+  businessName: string,
+  fontData: ArrayBuffer
 ): Promise<Buffer> {
-  const fontBase64 = await getBengaliFont()
+  const overlayH = Math.round(height * 0.38)
+  const titleSize = Math.round(width * 0.052)
+  const bizSize = Math.round(width * 0.028)
 
-  const baseImg = sharp(Buffer.from(imageBytes))
-  const { width = 1024, height = 1024 } = await baseImg.metadata()
+  const svg = await satori(
+    {
+      type: "div",
+      props: {
+        style: {
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "flex-end",
+          alignItems: "center",
+          width: `${width}px`,
+          height: `${overlayH}px`,
+          background: "linear-gradient(to bottom, transparent, rgba(0,0,0,0.78))",
+          paddingBottom: "28px",
+          paddingLeft: "20px",
+          paddingRight: "20px",
+          gap: "10px",
+          boxSizing: "border-box",
+        },
+        children: [
+          {
+            type: "div",
+            props: {
+              style: {
+                fontFamily: "NotoSansBengali",
+                fontSize: `${titleSize}px`,
+                fontWeight: "bold",
+                color: "white",
+                textAlign: "center",
+              },
+              children: title,
+            },
+          },
+          {
+            type: "div",
+            props: {
+              style: {
+                fontFamily: "NotoSansBengali",
+                fontSize: `${bizSize}px`,
+                color: "rgba(255,255,255,0.82)",
+                textAlign: "center",
+                letterSpacing: "1px",
+              },
+              children: businessName,
+            },
+          },
+        ],
+      },
+    },
+    {
+      width,
+      height: overlayH,
+      fonts: [{ name: "NotoSansBengali", data: fontData, weight: 400, style: "normal" }],
+    }
+  )
 
-  const gradientH = Math.round(height * 0.35)
-  const gradientY = height - gradientH
-
-  const titleFontSize = Math.round(width * 0.055)
-  const bizFontSize = Math.round(width * 0.032)
-  const titleLines = wrapText(title, 22)
-  const lineH = titleFontSize * 1.4
-
-  const titleBlockH = titleLines.length * lineH
-  const titleStartY = gradientY + gradientH * 0.28
-  const bizY = gradientY + gradientH * 0.82
-
-  const titleElements = titleLines
-    .map((line, i) =>
-      `<text x="${width / 2}" y="${titleStartY + i * lineH}" font-family="NotoSansBengali" font-size="${titleFontSize}" fill="white" text-anchor="middle" dominant-baseline="hanging" font-weight="bold" filter="url(#shadow)">${escapeXml(line)}</text>`
-    )
-    .join("\n")
-
-  const svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <style>
-      @font-face {
-        font-family: 'NotoSansBengali';
-        src: url('data:font/truetype;base64,${fontBase64}');
-      }
-    </style>
-    <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="black" stop-opacity="0"/>
-      <stop offset="100%" stop-color="black" stop-opacity="0.72"/>
-    </linearGradient>
-    <filter id="shadow">
-      <feDropShadow dx="1" dy="1" stdDeviation="2" flood-color="black" flood-opacity="0.8"/>
-    </filter>
-  </defs>
-  <rect x="0" y="${gradientY}" width="${width}" height="${gradientH}" fill="url(#grad)"/>
-  ${titleElements}
-  <text x="${width / 2}" y="${bizY}" font-family="NotoSansBengali" font-size="${bizFontSize}" fill="rgba(255,255,255,0.8)" text-anchor="middle" dominant-baseline="hanging" letter-spacing="1">${escapeXml(businessName)}</text>
-</svg>`
-
-  return baseImg
-    .composite([{ input: Buffer.from(svg), top: 0, left: 0 }])
-    .jpeg({ quality: 92 })
-    .toBuffer()
+  return sharp(Buffer.from(svg)).png().toBuffer()
 }
 
-async function overlayLogo(img: sharp.Sharp, logoUrl: string, width: number, height: number): Promise<sharp.Sharp> {
+async function overlayLogo(
+  img: sharp.Sharp,
+  logoUrl: string,
+  width: number,
+  height: number
+): Promise<sharp.Sharp> {
   const logoSize = Math.round(Math.min(width, height) * 0.14)
   const padding = Math.round(logoSize * 0.25)
 
@@ -148,7 +149,14 @@ export async function POST(req: Request) {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      input: { prompt: enhancedPrompt, num_outputs: 1, output_format: "jpg", aspect_ratio: "1:1", guidance: 3.5, num_inference_steps: 28 },
+      input: {
+        prompt: enhancedPrompt,
+        num_outputs: 1,
+        output_format: "jpg",
+        aspect_ratio: "1:1",
+        guidance: 3.5,
+        num_inference_steps: 28,
+      },
     }),
   })
 
@@ -163,27 +171,35 @@ export async function POST(req: Request) {
   const imgRes = await fetch(imageUrl)
   const imgBytes = await imgRes.arrayBuffer()
 
-  let finalBuffer: Buffer
+  let baseSharp = sharp(Buffer.from(imgBytes))
+  const { width = 1024, height = 1024 } = await baseSharp.metadata()
 
-  try {
-    // Add text overlay first
-    const withText = title && business?.name
-      ? await addTextOverlay(imgBytes, title, business.name)
-      : Buffer.from(imgBytes)
-
-    // Then overlay logo top-right
-    if (business?.logoUrl) {
-      const withTextSharp = sharp(withText)
-      const { width = 1024, height = 1024 } = await withTextSharp.metadata()
-      const withLogo = await overlayLogo(withTextSharp, business.logoUrl, width, height)
-      finalBuffer = await withLogo.jpeg({ quality: 92 }).toBuffer()
-    } else {
-      finalBuffer = withText
+  // Text overlay
+  if (title && business?.name) {
+    try {
+      const fontData = await getBengaliFont()
+      const textPng = await createTextOverlay(width, height, title, business.name, fontData)
+      baseSharp = sharp(
+        await baseSharp
+          .composite([{ input: textPng, top: height - Math.round(height * 0.38), left: 0 }])
+          .jpeg({ quality: 92 })
+          .toBuffer()
+      )
+    } catch (e) {
+      console.error("Text overlay error:", e)
     }
-  } catch (e) {
-    console.error("Overlay error:", e)
-    finalBuffer = Buffer.from(imgBytes)
   }
+
+  // Logo overlay
+  if (business?.logoUrl) {
+    try {
+      baseSharp = await overlayLogo(baseSharp, business.logoUrl, width, height)
+    } catch (e) {
+      console.error("Logo overlay error:", e)
+    }
+  }
+
+  const finalBuffer = await baseSharp.jpeg({ quality: 92 }).toBuffer()
 
   const filePath = `ai-generated/${session.user.id}/${randomUUID()}.jpg`
   const bucket = "product-images"
