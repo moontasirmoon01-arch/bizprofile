@@ -22,7 +22,8 @@ export async function POST(req: Request) {
   const { prompt } = await req.json()
   if (!prompt) return NextResponse.json({ error: "prompt required" }, { status: 400 })
 
-  const token = process.env.REPLICATE_API_TOKEN!
+  const token = process.env.REPLICATE_API_TOKEN?.trim()
+  if (!token) return NextResponse.json({ error: "REPLICATE_API_TOKEN not set" }, { status: 500 })
 
   // Start FLUX Schnell prediction
   const startRes = await fetch("https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions", {
