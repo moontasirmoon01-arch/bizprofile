@@ -54,8 +54,8 @@ Respond in this exact JSON format:
 
   if (!res.ok) {
     const err = await res.text()
-    console.error("Claude API error:", err)
-    return NextResponse.json({ error: "AI generation failed" }, { status: 500 })
+    console.error("Claude API error:", res.status, err)
+    return NextResponse.json({ error: `Claude API ${res.status}: ${err.slice(0, 200)}` }, { status: 500 })
   }
 
   const data = await res.json()
