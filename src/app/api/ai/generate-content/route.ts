@@ -34,11 +34,14 @@ Requirements:
 - Keep caption under 300 words
 - Add 5-8 relevant Bengali/English hashtags at the end
 
+Also generate an imagePrompt: a detailed English prompt for an AI image generator (FLUX) that creates a photorealistic, visually compelling advertisement image perfectly matching the post content. Be very specific about: subject, style, colors, lighting, mood, setting. Make it relevant to the business type and products. Do NOT include text/words in the image. Format: cinematic/commercial photography style description.
+
 Respond in this exact JSON format:
 {
   "title": "short campaign title in Bengali (max 8 words)",
   "caption": "full post caption with emojis",
-  "hashtags": "#tag1 #tag2 #tag3"
+  "hashtags": "#tag1 #tag2 #tag3",
+  "imagePrompt": "detailed English image generation prompt"
 }`
 
     const apiKey = process.env.ANTHROPIC_API_KEY?.trim()

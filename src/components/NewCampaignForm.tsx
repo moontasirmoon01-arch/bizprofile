@@ -63,9 +63,13 @@ export function NewCampaignForm({
         const full = data.hashtags ? `${data.caption}\n\n${data.hashtags}` : data.caption
         setValue("description", full)
       }
-      // Auto-set image prompt
-      const productNames = products.filter(p => selectedProducts.includes(p.id)).map(p => p.name).join(", ")
-      setImagePrompt(`High-quality social media advertisement for "${businessName}"${productNames ? `, showcasing ${productNames}` : ""}. Studio lighting, photorealistic, vibrant colors, clean white background, professional product photography, 4K, sharp focus, commercial ad style`)
+      // Use AI-generated image prompt if available, otherwise fallback
+      if (data.imagePrompt) {
+        setImagePrompt(data.imagePrompt)
+      } else {
+        const productNames = products.filter(p => selectedProducts.includes(p.id)).map(p => p.name).join(", ")
+        setImagePrompt(`High-quality social media advertisement for "${businessName}"${productNames ? `, showcasing ${productNames}` : ""}. Studio lighting, photorealistic, vibrant colors, clean white background, professional product photography, 4K, sharp focus, commercial ad style`)
+      }
     } catch (e: any) {
       setError(e.message ?? "AI content generation failed")
     }
