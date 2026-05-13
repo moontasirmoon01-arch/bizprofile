@@ -2,10 +2,9 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { randomUUID } from "crypto"
-import { readFileSync } from "fs"
-import path from "path"
 import sharp from "sharp"
 import satori from "satori"
+import { NOTO_SANS_BENGALI_B64 } from "@/lib/bengali-font-data"
 
 export const maxDuration = 60
 
@@ -13,7 +12,7 @@ let cachedFont: ArrayBuffer | null = null
 
 function getBengaliFont(): ArrayBuffer {
   if (cachedFont) return cachedFont
-  const buf = readFileSync(path.join(process.cwd(), "public", "fonts", "NotoSansBengali-Regular.ttf"))
+  const buf = Buffer.from(NOTO_SANS_BENGALI_B64, "base64")
   cachedFont = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer
   return cachedFont
 }
