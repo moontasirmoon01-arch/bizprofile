@@ -2,6 +2,8 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { randomUUID } from "crypto"
+import { readFileSync } from "fs"
+import path from "path"
 import sharp from "sharp"
 import satori from "satori"
 
@@ -9,14 +11,10 @@ export const maxDuration = 60
 
 let cachedFont: ArrayBuffer | null = null
 
-async function getBengaliFont(): Promise<ArrayBuffer> {
+function getBengaliFont(): ArrayBuffer {
   if (cachedFont) return cachedFont
-  const baseUrl = process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : "http://localhost:3000"
-  const res = await fetch(`${baseUrl}/fonts/NotoSansBengali-Regular.ttf`)
-  if (!res.ok) throw new Error(`Font fetch failed: ${res.status}`)
-  cachedFont = await res.arrayBuffer()
+  const buf = readFileSync(path.join(process.cwd(), "public", "fonts", "NotoSansBengali-Regular.ttf"))
+  cachedFont = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer
   return cachedFont
 }
 
@@ -177,7 +175,7 @@ export async function POST(req: Request) {
   // Text overlay
   if (title && business?.name) {
     try {
-      const fontData = await getBengaliFont()
+      const fontData = getBengaliFont()
       const textPng = await createTextOverlay(width, height, title, business.name, fontData)
       baseSharp = sharp(
         await baseSharp

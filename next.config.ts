@@ -6,6 +6,11 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "**.supabase.co" },
     ],
   },
+  experimental: {
+    outputFileTracingIncludes: {
+      "/api/ai/generate-image": ["./public/fonts/**/*"],
+    },
+  },
 };
 
 export default nextConfig;
